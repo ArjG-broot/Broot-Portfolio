@@ -11,9 +11,10 @@ export default function MyProjects() {
   const router = useRouter();
   const headingRef = useRef<HTMLDivElement>(null);
   const borderRef = useRef<HTMLDivElement>(null);
+  const seeMoreBtnRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    if (headingRef.current && borderRef.current) {
+    if (headingRef.current && borderRef.current && seeMoreBtnRef.current) {
       const letters = headingRef.current.querySelectorAll(".heading-char");
 
       const tl = gsap.timeline({
@@ -24,7 +25,6 @@ export default function MyProjects() {
         },
       });
 
-      // animate letters
       tl.fromTo(
         letters,
         { y: 50, opacity: 0, filter: "blur(5px)" },
@@ -38,12 +38,27 @@ export default function MyProjects() {
         }
       );
 
-      // animate border underline
       tl.fromTo(
         borderRef.current,
         { width: "0%" },
         { width: "100%", duration: 0.8, ease: "power2.out" },
-        "-=0.3" // overlap a bit with last letters
+        "-=0.3"
+      );
+
+      gsap.fromTo(
+        seeMoreBtnRef.current,
+        { y:-30, opacity: 0 },
+        {
+          y:0,
+          opacity: 1,
+          duration: 0.6,
+          ease: "power4.out",
+          scrollTrigger: {
+            trigger: seeMoreBtnRef.current,
+            start: "top 80%",
+            toggleActions: "play none none reverse",
+          },
+        }
       );
     }
   }, []);
@@ -83,8 +98,9 @@ export default function MyProjects() {
 
       {/* Button */}
       <button
+        ref={seeMoreBtnRef}
         onClick={() => router.push("/MyProjects")}
-        className="w-full h-8 flex flex-col justify-center text-sm text-gray-200/50 cursor-pointer group hover:text-gray-200 duration-200 lg:text-base mt-10 items-center"
+        className=" w-full h-8 flex flex-col justify-center text-sm text-gray-200/50 cursor-pointer group hover:text-gray-200 duration-200 lg:text-base mt-10 items-center"
       >
         See All Projects
         <div className="h-[2px] w-[80%] bg-linear-to-r from-trasnparent group-hover:via-red-800 transition duration-200 via-red-950 to-transparent rounded-[100%]"></div>

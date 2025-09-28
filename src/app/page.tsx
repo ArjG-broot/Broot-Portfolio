@@ -20,31 +20,31 @@ export default function Home() {
     const timer = setTimeout(() => {
       gsap.to(loaderRef.current, {
         y: "-100%",
-        duration: 2,
+        duration: 1.2,
         ease: "circ.out",
         onComplete: () => setLoading(false),
       });
       gsap.fromTo(
         mainRef.current,
         { y: "100%", opacity: 0 },
-        { y: "0%", opacity: 1, duration: 1.5, ease: "circ.out" }
+        { y: "0%", opacity: 1, duration: 1, ease: "circ.out" }
       );
-    }, 3 * 1000);
+    }, 3*1000);
 
     return () => clearTimeout(timer);
   }, []);
 
   return (
-    <>
+    <div className={`${loading?"h-screen overflow-y-hidden":""} w-screen`}>
       {loading && (
         <div
           ref={loaderRef}
-          className=" bg-[#0b0b0b] h-screen w-full flex items-center justify-center top-0 left-0 fixed z-200"
+          className=" bg-[#0b0b0b] h-screen w-screen flex items-center justify-center top-0 left-0 fixed z-200 "
         >
           <Loader />
         </div>
       )}
-      <div ref={mainRef} className="w-full flex flex-col z-120 relative">
+      <div ref={mainRef}  className="w-full flex flex-col z-120 relative ">
         <Header />
         <Hero />
         <Labels />
@@ -54,6 +54,6 @@ export default function Home() {
         <ContactMe />
         <Footer />
       </div>
-    </>
+    </div>
   );
 }

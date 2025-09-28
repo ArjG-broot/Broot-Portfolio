@@ -15,7 +15,7 @@ useEffect(() => {
     // Image animation
     tl.fromTo(
       heroRef.current.querySelectorAll(".hero-img"),
-      { y: 100, scale: 1.8, opacity: 0, filter: "blur(5px)" },
+      { y: 300, scale: 1.8, opacity: 0, filter: "blur(5px)" },
       {
         y: 0,
         scale: 0.9,

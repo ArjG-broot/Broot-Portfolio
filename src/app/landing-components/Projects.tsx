@@ -20,6 +20,8 @@ export default function Projects() {
       const leftImg = projectEl.querySelector(".left-img");
       const rightImg = projectEl.querySelector(".right-img");
       const projectName = projectEl.querySelector(".projectName");
+      const titleBox = projectEl.querySelector(".titleBox");
+      const briefBox = projectEl.querySelector(".briefBox");
 
       const tl = gsap.timeline({
         scrollTrigger: {
@@ -43,6 +45,25 @@ export default function Projects() {
         projectName,
         { y: 40, opacity: 0 },
         { y: 0, opacity: 1, duration: 0.6, ease: "power.out" }
+      );
+
+      gsap.fromTo(
+        briefBox,
+        {
+          y: -20,
+          opacity: 0,
+        },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.6,
+          ease: "power.out",
+          scrollTrigger: {
+            trigger: briefBox,
+            start: "top 85%", // adjust as needed
+            toggleActions: "play none none reverse",
+          },
+        }
       );
     });
   }, []);
@@ -75,7 +96,7 @@ export default function Projects() {
             {/* Images */}
             <div className="flex flex-row justify-center items-center">
               <Image
-                className={`rounded-sm z-4 main-img w-68 h-38 lg:h-80 lg:w-140 drop-shadow-2xl/90 ${project.dropShadow}`}
+                className={`rounded-sm z-4 main-img w-68 h-38 lg:h-80 lg:w-140 drop-shadow-2xl/90 ${project.dropShadow} z-20`}
                 height={300}
                 width={250}
                 src={`/media/${project.name}1.png`}
@@ -106,7 +127,7 @@ export default function Projects() {
             <div className="w-full h-fit">
               <div>
                 <div
-                  className={`flex flex-row justify-between items-center border-b-1 ${project.labelColor} rounded-md p-1.5 px-2 ${project.border} h-8 lg:h-fit mb-2 w-full`}
+                  className={`titleBox flex flex-row justify-between items-center border-b-1 ${project.labelColor} rounded-md p-1.5 px-2 ${project.border} h-8 lg:h-fit mb-2 w-full z-20`}
                 >
                   <div className="text-[12px] lg:text-lg play-regular !font-bold ">
                     {project.title.length > 45
@@ -131,7 +152,7 @@ export default function Projects() {
                 </div>
 
                 {/* Brief + Buttons */}
-                <div className="flex lg:flex-row flex-col lg:items-center gap-2 w-full px-1">
+                <div className="briefBox flex lg:flex-row flex-col lg:items-center gap-2 w-full px-1 z-19">
                   <div className="play-regular mt-1 text-[11px] lg:text-sm gray-300 text-gray-400">
                     {project.brief}
                   </div>
