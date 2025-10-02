@@ -27,7 +27,7 @@ export default function MyProjects() {
 
       tl.fromTo(
         letters,
-        { y: 50, opacity: 0, filter: "blur(5px)" },
+        { y: -50, opacity: 0, filter: "blur(5px)" },
         {
           y: 0,
           opacity: 1,

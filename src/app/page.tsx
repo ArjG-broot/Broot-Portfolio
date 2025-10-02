@@ -29,13 +29,13 @@ export default function Home() {
         { y: "100%", opacity: 0 },
         { y: "0%", opacity: 1, duration: 1, ease: "circ.out" }
       );
-    }, 3*1000);
+    }, 3 * 1000);
 
     return () => clearTimeout(timer);
   }, []);
 
   return (
-    <div className={`${loading?"h-screen overflow-y-hidden":""} w-screen`}>
+    <div className={`${loading ? "h-screen overflow-y-hidden" : ""} w-screen`}>
       {loading && (
         <div
           ref={loaderRef}
@@ -44,7 +44,7 @@ export default function Home() {
           <Loader />
         </div>
       )}
-      <div ref={mainRef}  className="w-full flex flex-col z-120 relative ">
+      <div ref={mainRef} className="w-full flex flex-col z-120 relative ">
         <Header />
         <Hero />
         <Labels />

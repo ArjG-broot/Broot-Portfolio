@@ -1,14 +1,50 @@
 "use client";
+import gsap from "gsap";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useEffect, useRef } from "react";
 
 export default function Footer() {
   const router = useRouter();
+  const headingRef = useRef<HTMLDivElement>(null);
+
+  const text = "I'm Arjit";
+
+  useEffect(() => {
+    if (headingRef.current) {
+      const letters = headingRef.current.querySelectorAll(".heading-char");
+      gsap.fromTo(
+        letters,
+        { y: 100, opacity: 0, filter: "blur(5px)" },
+        {
+          y: 0,
+          opacity: 1,
+          filter: "blur(0px)",
+          stagger: 0.08,
+          ease: "back.out(1.7)",
+          duration: 0.6,
+          scrollTrigger: {
+            trigger: headingRef.current,
+            start: "top 95%",
+            toggleActions: "play none none reverse",
+          },
+        }
+      );
+    }
+  }, []);
+
   return (
-    <div className="h-fit w-full bg-linear-to-b from-red-800/80 to-red-900/80 p-3">
+    <div
+      ref={headingRef}
+      className="h-fit w-full bg-linear-to-b from-red-800/80 to-red-900/80 p-3"
+    >
       <div className="flex flex-col-reverse lg:flex-row h-fit w-full border-1 border-white/30 pt-4">
-        <div className="league-font flex items-end text-[100px] mt-auto h-50 lg:text-[200px] bg-gradient-to-b from-white/90 lg:h-fit to-white/40 bg-clip-text text-transparent pl-5 lg:p-5">
-          {"I'm Arjit"}
+        <div className="league-font flex items-end text-[100px] mt-auto h-fit lg:text-[200px] text-red-200 pl-5 lg:p-5 overflow-y-hidden">
+          {text.split("").map((char, i) => (
+            <span key={i} className="heading-char inline-block overflow-hidden">
+              {char === " " ? "\u00A0" : char}
+            </span>
+          ))}
         </div>
 
         <div className="flex-grow w-full lg:w-[60%] ml-auto lg:p-10">
