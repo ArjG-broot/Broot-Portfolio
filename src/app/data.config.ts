@@ -25,7 +25,7 @@ export const ProjectData = [
     buttonColor:
       "bg-slate-950 drop-shadow-[0_0_15px_rgb(20_20_250_/0.2)] group-hover:drop-shadow-[0_0_15px_rgb(20_20_250_/0.5)] border-indigo-950",
     border: "border-indigo-800/80",
-    link: "https://todo.arjbroot.app/",
+    link: "https://todo.arjbroot.com/",
   },
   {
     projectName: "Broot-Portfolio",
