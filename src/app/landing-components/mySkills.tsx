@@ -7,7 +7,6 @@ import {
   SiReact,
   SiNextdotjs,
   SiZod,
-  SiAdobephotoshop,
   SiShadcnui,
   SiMui,
   SiGreensock,
@@ -32,6 +31,7 @@ import {
 import { FaAws, FaJava } from "react-icons/fa6";
 import { IoInfinite } from "react-icons/io5";
 import { TbBrandFramerMotion } from "react-icons/tb";
+import { DiPhotoshop } from "react-icons/di";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -125,7 +125,7 @@ export default function MySkills() {
     { name: "React", icon: SiReact },
     { name: "Next.js", icon: SiNextdotjs },
     { name: "Zod", icon: SiZod },
-    { name: "Photoshop", icon: SiAdobephotoshop },
+    { name: "Photoshop", icon: DiPhotoshop },
     { name: "Shadcn", icon: SiShadcnui },
     { name: "Material UI", icon: SiMui },
     { name: "GSAP", icon: SiGreensock },
