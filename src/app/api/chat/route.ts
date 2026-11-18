@@ -1,5 +1,12 @@
 import { NextResponse } from "next/server";
-import { PORTFOLIO_KNOWLEDGE } from "@/app/data.config";
+import {
+  buildRagSystemInstruction,
+  buildRetrievalQuery,
+  buildStaticPortfolioInstruction,
+  formatRetrievedContextBlock,
+  type RetrievalChatMessage,
+} from "@/server/chat/build-system-prompt";
+import { retrieveWithExpansion } from "@/server/knowledge/knowledge-retrieval";
 
 const GEMINI_MODEL = "gemini-3.5-flash-lite";
 const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
@@ -15,53 +22,6 @@ function declaredBodyTooLarge(request: Request): boolean {
 
   const bytes = Number(header);
   return !Number.isSafeInteger(bytes) || bytes < 0 || bytes > MAX_BODY_BYTES;
-}
-
-function portfolioInstruction(): string {
-  const { profile, links, skills, projects, sideProjects, hobbies } =
-    PORTFOLIO_KNOWLEDGE;
-
-  const projectLines = projects
-    .map(
-      (project) =>
-        `- ${project.title} (${project.link}): ${project.brief}`,
-    )
-    .join("\n");
-  const sideProjectLines = sideProjects
-    .map((project) => `- ${project.name}: ${project.note}`)
-    .join("\n");
-
-  return [
-    "You answer questions about Arjit Gupta's portfolio.",
-    "The portfolio knowledge below is the only factual source.",
-    "Do not invent employers, dates, education, metrics, project features, or achievements that are not in that knowledge.",
-    "If a detail is missing, say you don't know.",
-    "Earlier assistant messages are conversational context only, not verified facts. If they conflict with the portfolio knowledge, follow the knowledge.",
-    "",
-    `Name: ${profile.name}`,
-    `Role: ${profile.role}`,
-    `Focus: ${profile.focus}`,
-    `Availability: ${profile.availability}`,
-    "",
-    `Site: ${links.site}`,
-    `Email: ${links.email}`,
-    `GitHub: ${links.github}`,
-    `LinkedIn: ${links.linkedin}`,
-    `X: ${links.x}`,
-    "",
-    `Frontend: ${skills.frontend.join(", ")}`,
-    `Backend: ${skills.backend.join(", ")}`,
-    `Languages: ${skills.languages.join(", ")}`,
-    `Tools: ${skills.tools.join(", ")}`,
-    "",
-    "Projects:",
-    projectLines,
-    "",
-    "Side projects:",
-    sideProjectLines,
-    "",
-    `Hobbies: ${hobbies.join(", ")}`,
-  ].join("\n");
 }
 
 type ChatRole = "user" | "assistant";
@@ -80,6 +40,7 @@ type GeminiResponse = {
     content?: {
       parts?: GeminiPart[];
     };
+    finishReason?: string;
   }>;
 };
 
@@ -181,6 +142,45 @@ function logGeminiFailure(
   console.error(`${GEMINI_LOG_PREFIX} gemini_failure`, { kind, ...details });
 }
 
+async function resolveSystemInstruction(
+  messages: RetrievalChatMessage[],
+): Promise<string> {
+  const retrievalQuery = buildRetrievalQuery(messages);
+
+  try {
+    const chunks = await retrieveWithExpansion(retrievalQuery, {
+      sourceId: "portfolio_knowledge",
+    });
+
+    if (chunks.length === 0) {
+      return buildStaticPortfolioInstruction();
+    }
+
+    if (process.env.NODE_ENV !== "production") {
+      const contextBlock = formatRetrievedContextBlock(chunks);
+      console.info(`${GEMINI_LOG_PREFIX} retrieval_context`, {
+        sections: chunks.map((chunk) => ({
+          section: chunk.section,
+          similarity: chunk.similarity,
+          expanded: chunk.expanded,
+          projectName: chunk.projectName,
+          chunkType: chunk.chunkType,
+        })),
+        totalContextChars: contextBlock.length,
+      });
+    }
+
+    return buildRagSystemInstruction(formatRetrievedContextBlock(chunks));
+  } catch (error) {
+    console.error(`${GEMINI_LOG_PREFIX} retrieval_failed`, {
+      errorName: error instanceof Error ? error.name : "unknown",
+      errorMessage:
+        error instanceof Error ? error.message.slice(0, 300) : "unknown",
+    });
+    return buildStaticPortfolioInstruction();
+  }
+}
+
 export async function POST(request: Request) {
   if (declaredBodyTooLarge(request)) {
     return NextResponse.json(
@@ -219,6 +219,8 @@ export async function POST(request: Request) {
     );
   }
 
+  const systemInstruction = await resolveSystemInstruction(messages);
+
   console.info(`${GEMINI_LOG_PREFIX} gemini_fetch_start`, {
     model: GEMINI_MODEL,
     messageCount: messages.length,
@@ -237,7 +239,7 @@ export async function POST(request: Request) {
         systemInstruction: {
           parts: [
             {
-              text: portfolioInstruction(),
+              text: systemInstruction,
             },
           ],
         },
@@ -245,6 +247,10 @@ export async function POST(request: Request) {
           role: message.role === "assistant" ? "model" : "user",
           parts: [{ text: message.content }],
         })),
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 1024,
+        },
       }),
     });
 
@@ -278,12 +284,14 @@ export async function POST(request: Request) {
       );
     }
 
+    const finishReason = payload.candidates?.[0]?.finishReason;
     const reply = replyFromGemini(payload);
 
     if (!reply) {
       logGeminiFailure("empty_reply", {
         status: response.status,
         candidateCount: payload.candidates?.length ?? 0,
+        finishReason,
       });
       return NextResponse.json(
         { error: "The assistant did not return a reply." },
@@ -291,9 +299,16 @@ export async function POST(request: Request) {
       );
     }
 
+    if (finishReason === "MAX_TOKENS") {
+      console.info(`${GEMINI_LOG_PREFIX} gemini_max_tokens`, {
+        messageCount: messages.length,
+      });
+    }
+
     console.info(`${GEMINI_LOG_PREFIX} gemini_fetch_ok`, {
       status: response.status,
       messageCount: messages.length,
+      finishReason,
     });
 
     return NextResponse.json({ reply });

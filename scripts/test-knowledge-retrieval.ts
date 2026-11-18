@@ -1,7 +1,11 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import type { KnowledgeChunkType } from "../src/server/knowledge/ingestion-config";
-import { retrieveKnowledgeChunks } from "../src/server/knowledge/knowledge-retrieval";
+import {
+  retrieveKnowledgeChunks,
+  retrieveWithExpansion,
+  totalExpandedContextLength,
+} from "../src/server/knowledge/knowledge-retrieval";
 
 /** Collapse line breaks so wrapped source lines do not glue words in previews. */
 function formatRetrievalPreview(content: string, maxLength = 200): string {
@@ -47,7 +51,9 @@ function loadEnvLocal(): void {
 async function main() {
   loadEnvLocal();
 
-  const question = process.argv.slice(2).join(" ").trim();
+  const argv = process.argv.slice(2);
+  const useExpand = argv.includes("--expand");
+  const question = argv.filter((arg) => arg !== "--expand").join(" ").trim();
   const sourceId = process.env.PORTFOLIO_KNOWLEDGE_SOURCE_ID?.trim();
   const chunkType = process.env.PORTFOLIO_KNOWLEDGE_CHUNK_TYPE?.trim() as
     | KnowledgeChunkType
@@ -58,7 +64,57 @@ async function main() {
     console.error(
       '  npx tsx scripts/test-knowledge-retrieval.ts "What projects has Arjit built?"',
     );
+    console.error(
+      '  npx tsx scripts/test-knowledge-retrieval.ts --expand "What did Arjit do at NYX?"',
+    );
     process.exit(1);
+  }
+
+  if (useExpand) {
+    const results = await retrieveWithExpansion(question, {
+      ...(sourceId ? { sourceId } : {}),
+      ...(chunkType ? { chunkType } : {}),
+    });
+
+    for (const [index, chunk] of results.entries()) {
+      const preview = formatRetrievalPreview(chunk.content);
+
+      console.log(
+        JSON.stringify(
+          {
+            rank: index + 1,
+            section: chunk.section,
+            projectName: chunk.projectName,
+            chunkType: chunk.chunkType,
+            similarity:
+              chunk.similarity === null
+                ? null
+                : Number(chunk.similarity.toFixed(4)),
+            expanded: chunk.expanded,
+            preview,
+          },
+          null,
+          2,
+        ),
+      );
+    }
+
+    console.log(
+      JSON.stringify(
+        {
+          totalContextChars: totalExpandedContextLength(results),
+          chunkCount: results.length,
+        },
+        null,
+        2,
+      ),
+    );
+
+    if (results.length === 0) {
+      console.log("No matching chunks were returned.");
+    }
+
+    return;
   }
 
   const results = await retrieveKnowledgeChunks(question, {
