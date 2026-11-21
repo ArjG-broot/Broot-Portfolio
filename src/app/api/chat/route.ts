@@ -6,10 +6,16 @@ import {
   formatRetrievedContextBlock,
   type RetrievalChatMessage,
 } from "@/server/chat/build-system-prompt";
+import {
+  BROOT_UNAVAILABLE_MESSAGE,
+  generateWithFallback,
+  resolvePrimaryGeminiModel,
+} from "@/server/chat/gemini-generate";
+import {
+  normalizeUserMessage,
+  routeMessage,
+} from "@/server/chat/intent-router";
 import { retrieveWithExpansion } from "@/server/knowledge/knowledge-retrieval";
-
-const GEMINI_MODEL = "gemini-3.5-flash-lite";
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 const MAX_MESSAGES = 12;
 const MAX_CONTENT_LENGTH = 2000;
@@ -210,6 +216,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: messages }, { status });
   }
 
+  const lastUserMessage = [...messages]
+    .reverse()
+    .find((message) => message.role === "user");
+  const normalizedLastMessage = lastUserMessage
+    ? normalizeUserMessage(lastUserMessage.content)
+    : "";
+
+  const routeDecision = routeMessage(messages);
+
+  if (process.env.NODE_ENV !== "production") {
+    console.info(`${GEMINI_LOG_PREFIX} intent_route`, {
+      intent: routeDecision.intent,
+      kind: routeDecision.kind,
+      normalizedLastMessage,
+    });
+  }
+
+  if (routeDecision.kind === "canned") {
+    return NextResponse.json({ reply: routeDecision.reply });
+  }
+
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
@@ -219,52 +246,64 @@ export async function POST(request: Request) {
     );
   }
 
-  const systemInstruction = await resolveSystemInstruction(messages);
+  const systemInstruction =
+    routeDecision.kind === "model_no_retrieval"
+      ? buildRagSystemInstruction("")
+      : await resolveSystemInstruction(messages);
+
+  const primaryModel = resolvePrimaryGeminiModel();
 
   console.info(`${GEMINI_LOG_PREFIX} gemini_fetch_start`, {
-    model: GEMINI_MODEL,
+    model: primaryModel,
     messageCount: messages.length,
     timeoutMs: REQUEST_TIMEOUT_MS,
   });
 
+  const geminiRequestBody = {
+    systemInstruction: {
+      parts: [
+        {
+          text: systemInstruction,
+        },
+      ],
+    },
+    contents: messages.map((message) => ({
+      role: message.role === "assistant" ? "model" : "user",
+      parts: [{ text: message.content }],
+    })),
+    generationConfig: {
+      temperature: 0.3,
+      maxOutputTokens: 1024,
+    },
+  };
+
   try {
-    const response = await fetch(GEMINI_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": apiKey,
-      },
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-      body: JSON.stringify({
-        systemInstruction: {
-          parts: [
-            {
-              text: systemInstruction,
-            },
-          ],
-        },
-        contents: messages.map((message) => ({
-          role: message.role === "assistant" ? "model" : "user",
-          parts: [{ text: message.content }],
-        })),
-        generationConfig: {
-          temperature: 0.3,
-          maxOutputTokens: 1024,
-        },
-      }),
+    const generation = await generateWithFallback(geminiRequestBody, {
+      apiKey,
+      perAttemptTimeoutMs: REQUEST_TIMEOUT_MS,
     });
 
-    if (!response.ok) {
-      const rawBody = await response.text().catch(() => "");
-      logGeminiFailure("non_2xx", {
-        status: response.status,
-        statusText: response.statusText,
-        bodyPreview: sanitizeProviderBody(rawBody),
+    if (!generation.ok) {
+      console.error(`${GEMINI_LOG_PREFIX} gemini_exhausted`, {
+        modelsTried: generation.modelsTried,
+        statuses: generation.statuses,
+        attempts: generation.attempts,
+        latencyMs: generation.latencyMs,
       });
       return NextResponse.json(
-        { error: "The assistant is unavailable right now." },
-        { status: 502 },
+        { error: BROOT_UNAVAILABLE_MESSAGE },
+        { status: 503 },
       );
+    }
+
+    const { response, model, attempts, latencyMs } = generation;
+
+    if (process.env.NODE_ENV !== "production") {
+      console.info(`${GEMINI_LOG_PREFIX} gemini_answered`, {
+        model,
+        attempts,
+        latencyMs,
+      });
     }
 
     let payload: GeminiResponse;
@@ -307,6 +346,7 @@ export async function POST(request: Request) {
 
     console.info(`${GEMINI_LOG_PREFIX} gemini_fetch_ok`, {
       status: response.status,
+      model,
       messageCount: messages.length,
       finishReason,
     });
@@ -320,8 +360,8 @@ export async function POST(request: Request) {
         error instanceof Error ? error.message.slice(0, 200) : "unknown",
     });
     return NextResponse.json(
-      { error: "The assistant is unavailable right now." },
-      { status: 502 },
+      { error: BROOT_UNAVAILABLE_MESSAGE },
+      { status: 503 },
     );
   }
 }
