@@ -77,7 +77,7 @@ useEffect(() => {
             src={"/media/hero.png"}
             alt="profile image"
             priority
-            className="scale-90 z-10 hero-img"
+            className="scale-90 z-10 hero-img w-[1000px]"
           />
           <div className="h-[90%] w-full inset-0 absolute bg-gray-400/10 mt-8 blur-2xl md:blur-3xl rounded-full hero-blur"></div>
         </div>

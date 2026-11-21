@@ -42,3 +42,72 @@ export const ProjectData = [
     link: "https://arjbroot.com/",
   },
 ];
+
+export const PORTFOLIO_KNOWLEDGE = {
+  profile: {
+    name: "Arjit Gupta",
+    role: "Full-stack web developer",
+    focus:
+      "Builds real-time apps, UIs, and full-stack products. Designs his own interfaces and turns ideas into working products.",
+    availability:
+      "Looking for opportunities to learn, grow, and contribute to real-world products.",
+  },
+  links: {
+    site: "https://arjbroot.com/",
+    email: "Arjit0228@gmail.com",
+    github: "https://github.com/BROOTBULL/",
+    linkedin: "https://www.linkedin.com/in/arjit-gupta-5a9601230/",
+    x: "https://x.com/ArjBroot",
+  },
+  skills: {
+    frontend: [
+      "React",
+      "Next.js",
+      "Zod",
+      "Photoshop",
+      "Shadcn",
+      "Material UI",
+      "GSAP",
+      "Framer Motion",
+      "Tailwind CSS",
+    ],
+    backend: [
+      "Node.js",
+      "Express.js",
+      "Prisma ORM",
+      "Mongoose",
+      "Authentication",
+      "WebSockets",
+      "MongoDB",
+      "PostgreSQL",
+      "AWS (S3)",
+      "Docker",
+      "Vercel",
+      "Render",
+    ],
+    languages: ["Java", "SQL (Postgres)", "JavaScript", "HTML/CSS", "TypeScript"],
+    tools: [
+      "GitHub",
+      "CI/CD",
+      "Zustand",
+      "JWT Auth",
+      "VS Code",
+      "Postman",
+      "Docker",
+      "Figma",
+    ],
+  },
+  projects: ProjectData.map((project) => ({
+    name: project.projectName,
+    title: project.title,
+    brief: project.brief,
+    link: project.link,
+  })),
+  sideProjects: [
+    {
+      name: "Mini piano games",
+      note: "Named on the site as side projects. No link, stack, or further description is provided.",
+    },
+  ],
+  hobbies: ["Gaming", "Sketching", "Graphic designing", "Photoshop"],
+};

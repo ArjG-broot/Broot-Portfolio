@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Chatbot from "./landing-components/chatbot";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning={true}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
@@ -31,8 +32,8 @@ export default function RootLayout({
           href="https://fonts.gstatic.com"
           crossOrigin="anonymous"
         />
-        <link rel="preload" href="/ArjitGupta_Resume.pdf" as="fetch" type="application/pdf"/>
-        <link rel="preload" as="image" href="/media/BrootW.png" />
+        {/* <link rel="preload" href="/ArjitGupta_Resume.pdf" as="fetch" type="application/pdf"/> */}
+        {/* <link rel="preload" as="image" href="/media/BrootW.png" /> */}
         <link
           href="https://fonts.googleapis.com/css2?family=Anton&family=League+Gothic&family=Oleo+Script:wght@400;700&family=Oswald:wght@200..700&family=Play:wght@400;700&family=Rubik+Mono+One&&family=Syncopate:wght@400;700&display=swap"
           rel="stylesheet"
@@ -42,6 +43,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
+        <Chatbot />
       </body>
     </html>
   );
