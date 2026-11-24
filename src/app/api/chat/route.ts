@@ -15,6 +15,11 @@ import {
   normalizeUserMessage,
   routeMessage,
 } from "@/server/chat/intent-router";
+import {
+  checkRateLimit,
+  rateLimitUserMessage,
+  shouldRateLimitChatRequest,
+} from "@/server/chat/rate-limit";
 import { retrieveWithExpansion } from "@/server/knowledge/knowledge-retrieval";
 
 const MAX_MESSAGES = 12;
@@ -235,6 +240,38 @@ export async function POST(request: Request) {
 
   if (routeDecision.kind === "canned") {
     return NextResponse.json({ reply: routeDecision.reply });
+  }
+
+  if (shouldRateLimitChatRequest(routeDecision.kind)) {
+    const rateLimit = await checkRateLimit(request);
+
+    if (!rateLimit.allowed) {
+      const errorMessage = rateLimitUserMessage(rateLimit.reason);
+
+      if (process.env.NODE_ENV !== "production") {
+        console.info(`${GEMINI_LOG_PREFIX} rate_limit_block`, {
+          reason: rateLimit.reason,
+          remainingCount: rateLimit.remainingCount,
+        });
+      }
+
+      return NextResponse.json(
+        { error: errorMessage },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(Math.max(1, rateLimit.retryAfterSeconds)),
+          },
+        },
+      );
+    }
+
+    if (process.env.NODE_ENV !== "production") {
+      console.info(`${GEMINI_LOG_PREFIX} rate_limit_ok`, {
+        reason: rateLimit.reason,
+        remainingCount: rateLimit.remainingCount,
+      });
+    }
   }
 
   const apiKey = process.env.GEMINI_API_KEY;
