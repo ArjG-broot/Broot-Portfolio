@@ -20,7 +20,6 @@ export default function Projects() {
       const leftImg = projectEl.querySelector(".left-img");
       const rightImg = projectEl.querySelector(".right-img");
       const projectName = projectEl.querySelector(".projectName");
-      const titleBox = projectEl.querySelector(".titleBox");
       const briefBox = projectEl.querySelector(".briefBox");
 
       const tl = gsap.timeline({

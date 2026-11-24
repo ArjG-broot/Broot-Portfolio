@@ -12,11 +12,6 @@ import {
   type RouteMessage,
 } from "@/server/chat/intent-router";
 
-const HISTORY_WITH_ASSISTANT: RouteMessage[] = [
-  { role: "user", content: "What did Arjit do at NYX?" },
-  { role: "assistant", content: "He worked on frontend features at NYX." },
-];
-
 type Case = {
   label: string;
   messages: RouteMessage[];

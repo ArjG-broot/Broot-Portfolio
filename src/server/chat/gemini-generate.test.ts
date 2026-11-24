@@ -40,7 +40,7 @@ test("generateWithFallback succeeds on first try", async () => {
     fetchImpl,
     sleep: async () => {},
     now: (() => {
-      let t = 1_000;
+      const t = 1_000;
       return () => t;
     })(),
   });

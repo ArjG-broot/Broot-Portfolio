@@ -144,7 +144,7 @@ export function mergeSmallSections(
   };
 
   for (const section of sections) {
-    let current = section;
+    const current = section;
 
     if (pending) {
       mergeInto(current, pending);
@@ -318,9 +318,6 @@ export function formatEmbeddingText(
   const pathParts = sectionPath
     ? sectionPath.split(" > ").filter(Boolean)
     : [sectionTitle].filter(Boolean);
-
-  const leaf =
-    pathParts.length > 0 ? pathParts[pathParts.length - 1] : sectionTitle;
 
   const prefixPath = [...pathParts];
   if (prefixPath[prefixPath.length - 1] !== sectionTitle && sectionTitle) {
